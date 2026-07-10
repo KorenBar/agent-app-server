@@ -1,0 +1,146 @@
+services:
+  agent-app-nginx-vhost:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agent-app:local
+    container_name: agent-app-nginx-vhost
+    restart: "no"
+    network_mode: none
+    entrypoint:
+      - /usr/local/bin/agent-app-nginx-vhost
+    environment:
+      AGENT_APP_DOMAIN: "${AGENT_APP_DOMAIN:?AGENT_APP_DOMAIN is missing}"
+      AGENT_APP_AUTH_DOMAIN: "${AGENT_APP_AUTH_DOMAIN:?AGENT_APP_AUTH_DOMAIN is missing}"
+    volumes:
+      - ../volumes/vhost.d:/etc/nginx/vhost.d
+
+  agent-app-authelia:
+    image: authelia/authelia:4.39
+    container_name: agent-app-authelia
+    restart: unless-stopped
+    depends_on:
+      agent-app-smtp:
+        condition: service_healthy
+        required: false
+    environment:
+      TZ: ${TZ:-Asia/Jerusalem}
+
+      VIRTUAL_HOST: "${AGENT_APP_AUTH_DOMAIN:?AGENT_APP_AUTH_DOMAIN is missing}"
+      VIRTUAL_PORT: "9091"
+      CERT_NAME: "${AGENT_APP_DOMAIN:?AGENT_APP_DOMAIN is missing}"
+      HTTPS_METHOD: redirect
+    expose:
+      - "9091"
+    volumes:
+      - ../volumes/agent-app/authelia/config:/config
+    networks:
+      - reverse_proxy
+      - default
+
+  agent-app-smtp:
+    image: boky/postfix:v5.1.0
+    container_name: agent-app-smtp
+    profiles:
+      - smtp
+    restart: unless-stopped
+    hostname: "${AGENT_APP_SMTP_DOMAIN:-agent-app.local}"
+    environment:
+      TZ: ${TZ:-Asia/Jerusalem}
+      POSTFIX_myhostname: "${AGENT_APP_SMTP_DOMAIN:-agent-app.local}"
+      POSTFIX_smtpd_tls_security_level: "none"
+      ALLOWED_SENDER_DOMAINS: "${AGENT_APP_SMTP_DOMAIN:-agent-app.local}"
+      DKIM_SELECTOR: "mail"
+    expose:
+      - "25"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "bash -ec ': >/dev/tcp/127.0.0.1/25'"
+      interval: 5s
+      timeout: 3s
+      start_period: 20s
+      retries: 12
+    volumes:
+      - ../volumes/agent-app/smtp/opendkim:/etc/opendkim/keys
+
+  agent-app-notifications:
+    image: alpine:3.20
+    container_name: agent-app-notifications
+    profiles:
+      - notifications
+    restart: unless-stopped
+    command:
+      - sh
+      - -ec
+      - |
+        touch /config/notification.txt
+        echo "Watching Authelia notifications at /config/notification.txt"
+        tail -n +1 -F /config/notification.txt
+    volumes:
+      - ../volumes/agent-app/authelia/config:/config
+
+  agent-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agent-app:local
+    container_name: agent-app
+    restart: unless-stopped
+    depends_on:
+      agent-app-nginx-vhost:
+        condition: service_completed_successfully
+    env_file:
+      - ../volumes/acme-dns/clients/agent-app.env
+    environment:
+      TZ: ${TZ:-Asia/Jerusalem}
+      CODEX_HOME: /home/agent/.codex
+      NPM_CONFIG_PREFIX: /home/agent/.npm-global
+      CODEXUI_SANDBOX_MODE: "${CODEXUI_SANDBOX_MODE:-danger-full-access}"
+      CODEXUI_APPROVAL_POLICY: "${CODEXUI_APPROVAL_POLICY:-never}"
+      AGENT_APP_ENABLE_SUDO: "${AGENT_APP_ENABLE_SUDO:-false}"
+      AGENT_APP_PASSWORD: "${AGENT_APP_PASSWORD:-}"
+      AGENT_APP_AUTHORIZED_KEYS: "${AGENT_APP_AUTHORIZED_KEYS:-}"
+      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_BUILDKIT: "1"
+      COMPOSE_DOCKER_CLI_BUILD: "1"
+
+      VIRTUAL_HOST: "${AGENT_APP_DOMAIN:?AGENT_APP_DOMAIN is missing},*.${AGENT_APP_DOMAIN:?AGENT_APP_DOMAIN is missing}"
+      VIRTUAL_PORT: "5900"
+      CERT_NAME: "${AGENT_APP_DOMAIN:?AGENT_APP_DOMAIN is missing}"
+      LETSENCRYPT_HOST: "${AGENT_APP_DOMAIN:?AGENT_APP_DOMAIN is missing},*.${AGENT_APP_DOMAIN:?AGENT_APP_DOMAIN is missing}"
+      LETSENCRYPT_EMAIL: "${ADMIN_EMAIL:?ADMIN_EMAIL is missing}"
+      ACME_CHALLENGE: DNS-01
+      HTTPS_METHOD: redirect
+    ports:
+      - "${AGENT_APP_SSH_BIND:-127.0.0.1}:${AGENT_APP_SSH_PORT:-2222}:22"
+    expose:
+      - "5900"
+    privileged: true
+    shm_size: "256m"
+    volumes:
+      - ../volumes/agent-app/workspace:/workspace
+      - ../volumes/agent-app/docker:/var/lib/docker
+      - ../volumes/agent-app/home/.codex:/home/agent/.codex
+      - ../volumes/agent-app/home/Documents:/home/agent/Documents
+      - ../volumes/agent-app/home/.local:/home/agent/.local
+      - ../volumes/agent-app/home/.npm-global:/home/agent/.npm-global
+      - ../volumes/agent-app/ssh:/opt/agent-app/ssh:ro
+      - ../volumes/agent-app/sshd:/etc/ssh/persistent
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "pgrep -x sshd >/dev/null && pgrep -x dockerd >/dev/null && nc -z 127.0.0.1 5900"
+      interval: 1m
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    labels:
+      autoheal: "true"
+    networks:
+      - reverse_proxy
+
+networks:
+  reverse_proxy:
+    external: true
+    name: reverse_proxy

@@ -1,0 +1,66 @@
+services:
+
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:1.10.1
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../volumes/certs:/etc/nginx/certs:ro
+      - ../volumes/vhost.d:/etc/nginx/vhost.d
+      - ../volumes/html:/usr/share/nginx/html
+      - ../volumes/conf.d:/etc/nginx/conf.d
+      - ../volumes/dhparam:/etc/nginx/dhparam
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - reverse_proxy
+
+  acme-dns:
+    image: joohoi/acme-dns:v2.0.2
+    container_name: acme-dns
+    restart: unless-stopped
+    ports:
+      - "${ACME_DNS_BIND_IP:?Run /opt/servers/public-edge/init-server.sh to detect ACME_DNS_BIND_IP}:53:53/tcp"
+      - "${ACME_DNS_BIND_IP:?Run /opt/servers/public-edge/init-server.sh to detect ACME_DNS_BIND_IP}:53:53/udp"
+      - "127.0.0.1:8080:8080/tcp"
+    volumes:
+      - ../volumes/acme-dns/config:/etc/acme-dns:ro
+      - ../volumes/acme-dns/data:/var/lib/acme-dns
+    networks:
+      - reverse_proxy
+
+  acme-companion:
+    image: nginxproxy/acme-companion:2.6.3
+    container_name: nginx-proxy-acme
+    restart: unless-stopped
+    depends_on:
+      - nginx-proxy
+      - acme-dns
+    environment:
+      DEFAULT_EMAIL: "${ADMIN_EMAIL:?ADMIN_EMAIL is missing}"
+      NGINX_PROXY_CONTAINER: nginx-proxy
+    volumes:
+      - ../volumes/certs:/etc/nginx/certs
+      - ../volumes/vhost.d:/etc/nginx/vhost.d
+      - ../volumes/html:/usr/share/nginx/html
+      - ../volumes/acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - reverse_proxy
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      AUTOHEAL_INTERVAL: "60"
+      AUTOHEAL_START_PERIOD: "3600"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+  reverse_proxy:
+    name: reverse_proxy
