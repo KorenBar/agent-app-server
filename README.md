@@ -30,7 +30,7 @@ This command downloads the current `main` branch from
 `KorenBar/agent-app-server` and runs setup:
 
 ```bash
-sudo mkdir -p /opt/servers && curl -fsSL https://github.com/KorenBar/agent-app-server/archive/refs/heads/main.tar.gz | sudo tar -xz --strip-components=1 -C /opt/servers && cd /opt/servers && sudo ./setup-agent-app.sh
+sudo mkdir -p /opt/servers && curl -fsSL https://github.com/KorenBar/agent-app-server/archive/refs/heads/main.tar.gz | sudo tar -xz --strip-components=1 -C /opt/servers && cd /opt/servers && sudo bash ./setup-agent-app.sh
 ```
 
 For a stable production install, prefer a tagged release once releases exist by
@@ -40,7 +40,7 @@ You can predefine values before the same one-line setup command. Missing values
 will be asked interactively:
 
 ```bash
-sudo mkdir -p /opt/servers && curl -fsSL https://github.com/KorenBar/agent-app-server/archive/refs/heads/main.tar.gz | sudo tar -xz --strip-components=1 -C /opt/servers && cd /opt/servers && sudo AGENT_APP_DOMAIN=agent.example.com ADMIN_EMAIL=admin@example.com AGENT_APP_AUTH_USERNAME=agent AGENT_APP_AUTH_PASSWORD='replace-with-a-long-secret' ACME_DNS_DOMAIN=authdns.example.com ./setup-agent-app.sh
+sudo mkdir -p /opt/servers && curl -fsSL https://github.com/KorenBar/agent-app-server/archive/refs/heads/main.tar.gz | sudo tar -xz --strip-components=1 -C /opt/servers && cd /opt/servers && sudo AGENT_APP_DOMAIN=agent.example.com ADMIN_EMAIL=admin@example.com AGENT_APP_AUTH_USERNAME=agent AGENT_APP_AUTH_PASSWORD='replace-with-a-long-secret' ACME_DNS_DOMAIN=authdns.example.com bash ./setup-agent-app.sh
 ```
 
 The setup script installs or updates Docker, starts the public reverse proxy,
