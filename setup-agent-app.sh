@@ -113,15 +113,41 @@ require_files() {
 
 load_env_file() {
     local env_file="$1"
+    local line key value
     [[ -f "$env_file" ]] || return 0
 
     log "Loading existing environment file: ${env_file}"
-    set +u
-    set -a
-    # shellcheck disable=SC1090
-    . <(tr -d '\r' <"$env_file")
-    set +a
-    set -u
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+
+        [[ -z "$line" || "$line" == \#* ]] && continue
+
+        if [[ "$line" =~ ^export[[:space:]]+(.+)$ ]]; then
+            line="${BASH_REMATCH[1]}"
+        fi
+
+        [[ "$line" == *=* ]] || die "Invalid environment line in ${env_file}: ${line}"
+
+        key="${line%%=*}"
+        value="${line#*=}"
+        key="${key%"${key##*[![:space:]]}"}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+
+        [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] ||
+            die "Invalid environment variable name in ${env_file}: ${key}"
+
+        if [[ "$value" == \"*\" && "$value" == *\" && "${#value}" -ge 2 ]]; then
+            value="${value:1:${#value}-2}"
+        elif [[ "$value" == \'*\' && "$value" == *\' && "${#value}" -ge 2 ]]; then
+            value="${value:1:${#value}-2}"
+        fi
+
+        export "$key=$value"
+    done <"$env_file"
 }
 
 validate_domain() {
@@ -821,4 +847,6 @@ main() {
     compose_up
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

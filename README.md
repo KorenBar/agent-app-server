@@ -53,6 +53,10 @@ The setup script reads `/opt/servers/public-edge/.env` and
 `/opt/servers/agent-app/.env` if they exist. It asks for missing values, but it
 does not write your answers back to `.env`.
 
+`.env` files are parsed as simple `KEY=value` data, not executed as shell
+scripts. Values may contain spaces, so an SSH key can be written as
+`AGENT_APP_AUTHORIZED_KEYS=ssh-ed25519 AAAA... user@example.com`.
+
 | Variable | Required | Purpose |
 |---|---:|---|
 | `AGENT_APP_DOMAIN` | yes | Public domain for the Agent App UI, for example `agent.example.com`. |

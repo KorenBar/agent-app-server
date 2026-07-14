@@ -54,6 +54,10 @@ AGENT_APP_SMTP_DOMAIN=agent.example.com
 ADMIN_EMAIL=admin@example.com
 ```
 
+The setup script parses `.env` files as simple `KEY=value` data and does not
+execute them as shell scripts. Values may contain spaces, so SSH public keys can
+be written directly as `AGENT_APP_AUTHORIZED_KEYS=ssh-ed25519 AAAA... user@example.com`.
+
 Committed examples intentionally use `example.com` placeholder values. Keep real
 deployment values only in the server-side runtime environment, either exported in
 the shell or pre-defined in `.env`; do not commit private domains, real email
