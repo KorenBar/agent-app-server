@@ -113,7 +113,7 @@ services:
       ACME_CHALLENGE: DNS-01
       HTTPS_METHOD: redirect
     ports:
-      - "${AGENT_APP_SSH_BIND:-127.0.0.1}:${AGENT_APP_SSH_PORT:-2222}:22"
+      - "${AGENT_APP_SSH_BIND:-0.0.0.0}:${AGENT_APP_SSH_PORT:-2222}:22"
     expose:
       - "5900"
     privileged: true
