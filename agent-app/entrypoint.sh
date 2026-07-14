@@ -152,7 +152,7 @@ stdout_logfile_maxbytes=0
 redirect_stderr=true
 
 [program:dockerd]
-command=/usr/bin/dockerd --host=unix:///var/run/docker.sock --data-root=/var/lib/docker --storage-driver=overlay2 --bip=10.200.0.1/24 --default-address-pool base=10.201.0.0/16,size=24
+command=/bin/bash -lc 'rm -f /var/run/docker.pid /var/run/docker.sock /run/docker.pid /run/docker.sock; exec /usr/bin/dockerd --host=unix:///var/run/docker.sock --data-root=/var/lib/docker --storage-driver=overlay2 --bip=10.200.0.1/24 --default-address-pool base=10.201.0.0/16,size=24'
 priority=15
 autostart=true
 autorestart=true
