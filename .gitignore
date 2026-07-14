@@ -8,19 +8,15 @@ volumes/agent-app/docker/**
 !volumes/agent-app/docker/
 !volumes/agent-app/docker/.gitkeep
 
-volumes/agent-app/home/.codex/**
+volumes/agent-app/home/**
+!volumes/agent-app/home/
+!volumes/agent-app/home/.gitkeep
 !volumes/agent-app/home/.codex/
 !volumes/agent-app/home/.codex/.gitkeep
-
-volumes/agent-app/home/Documents/**
 !volumes/agent-app/home/Documents/
 !volumes/agent-app/home/Documents/.gitkeep
-
-volumes/agent-app/home/.local/**
 !volumes/agent-app/home/.local/
 !volumes/agent-app/home/.local/.gitkeep
-
-volumes/agent-app/home/.npm-global/**
 !volumes/agent-app/home/.npm-global/
 !volumes/agent-app/home/.npm-global/.gitkeep
 

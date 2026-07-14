@@ -71,7 +71,7 @@ RUN install -m 0755 -d /etc/apt/keyrings \
         docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
-# Install image-owned tools outside mounted user npm volumes.
+# Install image-owned tools outside the mounted agent home volume.
 RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd \
     && NPM_CONFIG_PREFIX=/usr/local npm install -g \
         @openai/codex \

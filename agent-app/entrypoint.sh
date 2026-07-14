@@ -199,22 +199,19 @@ EOF
 }
 
 prepare_runtime_dirs() {
-    local home_state_dirs=(
-        "$home_dir/.codex"
-        "$home_dir/Documents"
-        "$home_dir/.local"
-        "$home_dir/.npm-global"
-    )
+    # local home_state_dirs=(
+    # )
 
     install -d -m 0755 /run/sshd /workspace /var/lib/docker
     install -d -m 0700 -o "$user" -g "$user" "$home_dir/.codex"
     install -d -m 0755 -o "$user" -g "$user" "$home_dir/Documents" "$home_dir/.local" "$home_dir/.npm-global"
-    chown "$user:$user" /workspace "$home_dir"
+    chown "$user:$user" /workspace
+    chown -R "$user:$user" "$home_dir"
 
-    if ! chown -R "$user:$user" "${home_state_dirs[@]}"; then
-        log "Could not fix ownership of one or more persisted home directories."
-        return 1
-    fi
+    # if ! chown -R "$user:$user" "${home_state_dirs[@]}"; then
+    #     log "Could not fix ownership of one or more persisted directories."
+    #     return 1
+    # fi
 }
 
 main() {

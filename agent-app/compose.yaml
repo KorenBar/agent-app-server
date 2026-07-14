@@ -121,10 +121,7 @@ services:
     volumes:
       - ../volumes/agent-app/workspace:/workspace
       - ../volumes/agent-app/docker:/var/lib/docker
-      - ../volumes/agent-app/home/.codex:/home/agent/.codex
-      - ../volumes/agent-app/home/Documents:/home/agent/Documents
-      - ../volumes/agent-app/home/.local:/home/agent/.local
-      - ../volumes/agent-app/home/.npm-global:/home/agent/.npm-global
+      - ../volumes/agent-app/home:/home/agent
       - ../volumes/agent-app/ssh:/opt/agent-app/ssh:ro
       - ../volumes/agent-app/sshd:/etc/ssh/persistent
     healthcheck:

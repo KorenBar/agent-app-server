@@ -263,35 +263,6 @@ cd /opt/servers/agent-app
 sudo docker compose up -d --build --remove-orphans
 ```
 
-If you already started an earlier version, migrate existing volume directories
-once before starting this version:
-
-```bash
-cd /opt/servers/agent-app
-sudo docker compose down
-sudo mkdir -p /opt/servers/volumes/agent-app/home/.codex
-sudo mkdir -p /opt/servers/volumes/agent-app/home/Documents
-sudo mkdir -p /opt/servers/volumes/agent-app/home/.local
-sudo mkdir -p /opt/servers/volumes/agent-app/home/.npm-global
-if [ -d /opt/servers/volumes/agent-app/codex-config ]; then
-  sudo rsync -a /opt/servers/volumes/agent-app/codex-config/ /opt/servers/volumes/agent-app/home/.codex/
-  sudo mv /opt/servers/volumes/agent-app/codex-config /opt/servers/volumes/agent-app/codex-config.migrated
-fi
-if [ -d /opt/servers/volumes/agent-app/documents ]; then
-  sudo rsync -a /opt/servers/volumes/agent-app/documents/ /opt/servers/volumes/agent-app/home/Documents/
-  sudo mv /opt/servers/volumes/agent-app/documents /opt/servers/volumes/agent-app/documents.migrated
-fi
-if [ -d /opt/servers/volumes/agent-app/user-local ]; then
-  sudo rsync -a /opt/servers/volumes/agent-app/user-local/ /opt/servers/volumes/agent-app/home/.local/
-  sudo mv /opt/servers/volumes/agent-app/user-local /opt/servers/volumes/agent-app/user-local.migrated
-fi
-if [ -d /opt/servers/volumes/agent-app/npm-global ]; then
-  sudo rsync -a /opt/servers/volumes/agent-app/npm-global/ /opt/servers/volumes/agent-app/home/.npm-global/
-  sudo mv /opt/servers/volumes/agent-app/npm-global /opt/servers/volumes/agent-app/npm-global.migrated
-fi
-sudo docker compose up -d --build --remove-orphans
-```
-
 ## SSH Access
 
 The SSH server listens on port `22` inside the container. The compose file maps
@@ -485,21 +456,24 @@ possible.
 ```text
 /opt/servers/volumes/agent-app/workspace          -> /workspace
 /opt/servers/volumes/agent-app/docker             -> /var/lib/docker
-/opt/servers/volumes/agent-app/home/.codex        -> /home/agent/.codex
-/opt/servers/volumes/agent-app/home/Documents     -> /home/agent/Documents
-/opt/servers/volumes/agent-app/home/.local        -> /home/agent/.local
-/opt/servers/volumes/agent-app/home/.npm-global   -> /home/agent/.npm-global
+/opt/servers/volumes/agent-app/home               -> /home/agent
 /opt/servers/volumes/agent-app/authelia/config    -> /config
 /opt/servers/volumes/agent-app/smtp/opendkim      -> SMTP DKIM keys
 /opt/servers/volumes/agent-app/ssh                -> authorized_keys input
 /opt/servers/volumes/agent-app/sshd               -> persistent SSH host keys
 ```
 
-`CODEX_HOME` is fixed to `/home/agent/.codex`. That volume stores Codex and
+The full `/home/agent` directory is persisted. This includes `.codex`,
+`Documents`, `.local`, `.npm-global`, `.ssh`, shell history, user-installed
+tools, and future application state created under the agent user's home
+directory.
+
+`CODEX_HOME` is fixed to `/home/agent/.codex`. That directory stores Codex and
 Agent App state such as auth, config, UI sessions, skills, generated UI state,
 and Agent App worktrees.
 
-Projectless Agent App chats are stored by Agent App under `/home/agent/Documents/Codex`, so the whole `Documents` directory is a volume.
+Projectless Agent App chats are stored by Agent App under
+`/home/agent/Documents/Codex`, inside the persisted home directory.
 
 Keep repositories and working files under `/workspace`. User-level tools
 installed into `~/.local`, `pipx`, or the user npm prefix survive rebuilds.
@@ -509,10 +483,10 @@ be durable. Project-specific service stacks should usually run in the inner
 Docker daemon instead of being installed globally into the Agent App container.
 
 The image-provided `@openai/codex` and `codexapp` commands are installed under
-`/usr/local/bin`, outside the mounted `/home/agent/.npm-global` volume. The
-mounted npm-global volume is reserved for packages installed later by the agent
-or through SSH, so an empty backup volume cannot hide the CLIs baked into the
-image.
+`/usr/local/bin`, outside the mounted `/home/agent` volume. The
+`/home/agent/.npm-global` directory is reserved for packages installed later by
+the agent or through SSH, so an empty backup home volume cannot hide the CLIs
+baked into the image.
 
 ## Installed Commands
 
