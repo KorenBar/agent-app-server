@@ -411,12 +411,16 @@ install_npm_tools() {
     fi
 
     log "Installing Paseo, Codex, Claude Code, and Playwright under /usr/local."
-    NPM_CONFIG_PREFIX=/usr/local npm install -g \
-        @getpaseo/cli \
-        @openai/codex \
-        @anthropic-ai/claude-code \
-        @playwright/test@1.61.0 \
-        playwright@1.61.0
+    (
+        umask 022
+        NPM_CONFIG_PREFIX=/usr/local npm install -g \
+            @getpaseo/cli \
+            @openai/codex \
+            @anthropic-ai/claude-code \
+            @playwright/test@1.61.0 \
+            playwright@1.61.0
+    )
+    chmod -R a+rX "$SYSTEM_NPM_ROOT"
 
     install -d -m 0755 "$PLAYWRIGHT_BROWSERS_PATH"
     PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \

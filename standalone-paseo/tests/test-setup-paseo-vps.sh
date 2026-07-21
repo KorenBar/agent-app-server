@@ -94,5 +94,7 @@ grep -qx 'ExecStart=/usr/local/bin/paseo daemon start --foreground --listen 127.
 
 grep -Fq '.["default-network-opts"].bridge["com.docker.network.bridge.host_binding_ipv4"] = "127.0.0.1"' "$setup_script"
 grep -Fq '/run/sshd' "$setup_script"
+grep -Fq 'umask 022' "$setup_script"
+grep -Fq "chmod -R a+rX \"\$SYSTEM_NPM_ROOT\"" "$setup_script"
 
 printf 'standalone Paseo setup tests passed\n'
